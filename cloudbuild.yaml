@@ -1,0 +1,54 @@
+steps:
+  - id: Build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '--no-cache'
+      - '-t'
+      - '$_IMAGE_REPO_HOST/$PROJECT_ID/$_IMAGE_REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+      - .
+      - '-f'
+      - Dockerfile
+  - id: Set latest tag
+    name: gcr.io/cloud-builders/docker
+    args:
+      - tag
+      - '$_IMAGE_REPO_HOST/$PROJECT_ID/$_IMAGE_REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+      - '$_IMAGE_REPO_HOST/$PROJECT_ID/$_IMAGE_REPO_NAME/$_SERVICE_NAME:latest'
+  - id: Push
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - '$_IMAGE_REPO_HOST/$PROJECT_ID/$_IMAGE_REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+  - id: Push latest
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - '$_IMAGE_REPO_HOST/$PROJECT_ID/$_IMAGE_REPO_NAME/$_SERVICE_NAME:latest'
+  - id: Deploy
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    args:
+      - run
+      - services
+      - update
+      - $_SERVICE_NAME
+      - '--platform=managed'
+      - '--image=$_IMAGE_REPO_HOST/$PROJECT_ID/$_IMAGE_REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+      - >-
+        --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,trigger-name=$TRIGGER_NAME
+      - '--region=$_DEPLOY_REGION'
+      - '--quiet'
+    entrypoint: gcloud
+images:
+  - '$_IMAGE_REPO_HOST/$PROJECT_ID/$_IMAGE_REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+options:
+  substitutionOption: ALLOW_LOOSE
+substitutions:
+  _IMAGE_REPO_HOST: asia-northeast1-docker.pkg.dev
+  _IMAGE_REPO_NAME: itkr-nodejs-cloudrun-sample-repo
+  _SERVICE_NAME: itkr-nodejs-cloudrun-sample-app
+  _DEPLOY_REGION: asia-northeast1
+tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-managed
+  - itkr-nodejs-cloudrun-sample-app
