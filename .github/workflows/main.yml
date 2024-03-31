@@ -1,0 +1,50 @@
+name: Build and Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main 
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  SERVICE_NAME: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
+  REGION: us-central1 # Adjust this as necessary
+  GCR_HOSTNAME: gcr.io
+
+jobs:
+  setup-build-publish-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Necessary to fetch all tags and history
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.3.0
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Determine new version
+        id: versioning
+        run: |
+          git fetch --tags
+          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "Latest tag is $LATEST_TAG"
+          NEW_TAG="v$(echo $LATEST_TAG | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
+          echo "New tag is $NEW_TAG"
+          echo "::set-output name=new_tag::$NEW_TAG"
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
+
+      - name: Build and push Docker image using Cloud Build
+        run: |
+          gcloud builds submit --tag $GCR_HOSTNAME/$PROJECT_ID/$SERVICE_NAME:${{ steps.versioning.outputs.new_tag }} .
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE_NAME \
+            --image=$GCR_HOSTNAME/$PROJECT_ID/$SERVICE_NAME:${{ steps.versioning.outputs.new_tag }} \
+            --region=$REGION \
+            --platform=managed \
+            --allow-unauthenticated
