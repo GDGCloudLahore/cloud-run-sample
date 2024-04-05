@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0 # Necessary to fetch all tags and history
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@v0.2.0
         with:
           version: 'latest'
           service_account_email: ${{ secrets.GCP_SA_EMAIL }}
@@ -43,7 +43,7 @@ jobs:
       - name: Configure Docker
         run: |
           gcloud auth configure-docker
-          
+
       - name: Build and push Docker image using Cloud Build
         run: |
           gcloud builds submit --tag $GCR_HOSTNAME/$PROJECT_ID/$SERVICE_NAME:${{ steps.versioning.outputs.new_tag }} .
