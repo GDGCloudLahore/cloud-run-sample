@@ -8,7 +8,6 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  SERVICE_NAME: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
   REGION: us-central1 # Adjust this as necessary
   GCR_HOSTNAME: gcr.io
 
@@ -36,12 +35,12 @@ jobs:
 
       - name: Build and push Docker image using Cloud Build
         run: |
-          gcloud builds submit --tag $GCR_HOSTNAME/$PROJECT_ID/$SERVICE_NAME:latest .
+          gcloud builds submit --tag $GCR_HOSTNAME/$PROJECT_ID/helloworld:latest .
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy $SERVICE_NAME \
-            --image=$GCR_HOSTNAME/$PROJECT_ID/$SERVICE_NAME::latest \
+          gcloud run deploy gdgcloudlahore \
+            --image=$GCR_HOSTNAME/$PROJECT_ID/helloworld::latest \
             --region=$REGION \
             --platform=managed \
             --allow-unauthenticated
