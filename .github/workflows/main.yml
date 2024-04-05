@@ -31,8 +31,7 @@ jobs:
 
       - name: Configure Docker
         run: |
-          gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
-
+          gcloud auth configure-docker
     
       - name: Build  image using Cloud Build
         run: |
