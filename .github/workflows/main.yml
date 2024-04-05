@@ -9,7 +9,6 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   SERVICE_NAME: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
-  REGION: us-central1 # Adjust this as necessary
   GCR_HOSTNAME: gcr.io
 
 jobs:
@@ -30,35 +29,6 @@ jobs:
           project_id: ${{ env.PROJECT_ID }}
           export_default_credentials: true
 
-      - name: Determine new version
-        id: versioning
-        run: |
-          git fetch --tags
-          # Check if any tags exist
-          if [ $(git tag | wc -l) -eq 0 ]; then
-            echo "No tags found. Please create an initial tag."
-            exit 1  # Exit with error if no tags are found
-          else
-            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-          fi
-          echo "Latest tag is $LATEST_TAG"
-          # Prepare the next tag
-          NEXT_TAG="v$(echo $LATEST_TAG | sed 's/v//g' | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
-          echo "Attempting new tag $NEXT_TAG"
-          # Check if the NEXT_TAG already exists
-          if git rev-parse "$NEXT_TAG" >/dev/null 2>&1; then
-            echo "New tag $NEXT_TAG already exists. Using the latest tag $LATEST_TAG instead."
-            # If NEXT_TAG exists, we stick with LATEST_TAG and do not create a new one.
-            echo "NEW_TAG=$LATEST_TAG" >> $GITHUB_ENV
-          else
-            echo "New tag is $NEXT_TAG"
-            git tag $NEXT_TAG
-            git push origin $NEXT_TAG
-            # Use the successfully created new tag.
-            echo "NEW_TAG=$NEXT_TAG" >> $GITHUB_ENV
-          fi
-     
-
       - name: Configure Docker
         run: |
           gcloud auth configure-docker
@@ -70,11 +40,12 @@ jobs:
       - name: Push
         run: |
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/helloworld:latest
-          
-      - name: Deploy to Cloud Run
+
+      - name: Deploy
         run: |
-          gcloud run deploy $SERVICE_NAME \
-            --image=$GCR_HOSTNAME/$PROJECT_ID/$SERVICE_NAME:${{ steps.versioning.outputs.new_tag }} \
-            --region=$REGION \
-            --platform=managed \
-            --allow-unauthenticated
+          gcloud run deploy helloworld \
+          --region us-central1 \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/helloworld \
+          --platform managed \
+          --allow-unauthenticated \
+          --project ${{ secrets.GCP_PROJECT_ID }}
