@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main 
+  workflow_dispatch:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   SERVICE_NAME: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
@@ -20,8 +21,10 @@ jobs:
           fetch-depth: 0 # Necessary to fetch all tags and history
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v0.3.0
+        uses: google-github-actions/setup-gcloud@master
         with:
+          version: 'latest'
+          service_account_email: ${{ secrets.GCP_SA_EMAIL }}
           service_account_key: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ env.PROJECT_ID }}
 
@@ -37,6 +40,10 @@ jobs:
           git tag $NEW_TAG
           git push origin $NEW_TAG
 
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker
+          
       - name: Build and push Docker image using Cloud Build
         run: |
           gcloud builds submit --tag $GCR_HOSTNAME/$PROJECT_ID/$SERVICE_NAME:${{ steps.versioning.outputs.new_tag }} .
