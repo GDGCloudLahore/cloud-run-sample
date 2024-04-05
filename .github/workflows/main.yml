@@ -29,15 +29,15 @@ jobs:
           project_id: ${{ env.PROJECT_ID }}
           export_default_credentials: true
 
+      - name: Configure Docker
+        run: |
+          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://us-west3-docker.pkg.dev
+
     
       - name: Build  image using Cloud Build
         run: |
           docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/helloworld:latest .
-          
-      - name: Configure Docker
-        run: |
-          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://us-central1-docker.pkg.dev
-          
+               
       - name: Push
         run: |
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/helloworld:latest
@@ -45,7 +45,7 @@ jobs:
       - name: Deploy
         run: |
           gcloud run deploy helloworld \
-          --region us-central1 \
+          --region us-west3 \
           --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/helloworld \
           --platform managed \
           --allow-unauthenticated \
