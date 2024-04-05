@@ -31,7 +31,7 @@ jobs:
 
       - name: Configure Docker
         run: |
-          gcloud auth configure-docker gcr.io
+          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin europe-west1-docker.pkg.dev
 
     
       - name: Build  image using Cloud Build
@@ -45,7 +45,7 @@ jobs:
       - name: Deploy
         run: |
           gcloud run deploy helloworld \
-          --region us-west3 \
+          --region europe-west1 \
           --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/helloworld \
           --platform managed \
           --allow-unauthenticated \
