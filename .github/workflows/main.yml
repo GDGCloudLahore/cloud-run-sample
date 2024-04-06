@@ -32,24 +32,26 @@ jobs:
             echo "No tags found. Please create an initial tag."
             exit 1  # Exit with error if no tags are found
           else
-            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+            LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
           fi
           echo "Latest tag is $LATEST_TAG"
-          # Prepare the next tag
-          NEXT_TAG="v$(echo $LATEST_TAG | sed 's/v//g' | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
+          # Prepare the next tag without the 'v' prefix
+          NEXT_TAG=$(echo $LATEST_TAG | sed 's/v//g' | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
           echo "Attempting new tag $NEXT_TAG"
           # Check if the NEXT_TAG already exists
-          if git rev-parse "$NEXT_TAG" >/dev/null 2>&1; then
-            echo "New tag $NEXT_TAG already exists. Using the latest tag $LATEST_TAG instead."
+          if git rev-parse "v$NEXT_TAG" >/dev/null 2>&1; then
+            echo "New tag v$NEXT_TAG already exists. Using the latest tag $LATEST_TAG instead."
             # If NEXT_TAG exists, we stick with LATEST_TAG and do not create a new one.
             echo "NEW_TAG=$LATEST_TAG" >> $GITHUB_ENV
           else
             echo "New tag is $NEXT_TAG"
-            git tag $NEXT_TAG
-            git push origin $NEXT_TAG
-            # Use the successfully created new tag.
+            # Add 'v' prefix when creating the tag in git
+            git tag "v$NEXT_TAG"
+            git push origin "v$NEXT_TAG"
+            # Use the successfully created new tag without the 'v' prefix in the workflow.
             echo "NEW_TAG=$NEXT_TAG" >> $GITHUB_ENV
           fi
+
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v0.2.0
