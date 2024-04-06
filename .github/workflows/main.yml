@@ -36,20 +36,25 @@ jobs:
           username: _json_key
           password: ${{ secrets.GCP_SA_KEY}}
 
+      - name: Setup Project 
+        run: |
+          gcloud --quiet config set project ${secrets.GCP_PROJECT_ID} 
+          gcloud auth configure-docker us-west3-docker.pkg.dev
+
       - name: Build  image using Cloud Build
         run: |
-          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/helloworld:latest .
+          DOCKER_BUILDKIT=0
+          docker build -t us-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gdgcloudlahore-419421/helloworld:latest .
                
       - name: Push
         run: |
-          DOCKER_BUILDKIT=0
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/helloworld:latest
+          docker push us-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gdgcloudlahore-419421/helloworld:latest
 
-      - name: Deploy
-        run: |
-          gcloud run deploy helloworld \
-          --region us-west3 \
-          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/helloworld \
-          --platform managed \
-          --allow-unauthenticated \
-          --project ${{ secrets.GCP_PROJECT_ID }}
+      # - name: Deploy
+      #   run: |
+      #     gcloud run deploy helloworld \
+      #     --region us-west3 \
+      #     --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/helloworld \
+      #     --platform managed \
+      #     --allow-unauthenticated \
+      #     --project ${{ secrets.GCP_PROJECT_ID }}
