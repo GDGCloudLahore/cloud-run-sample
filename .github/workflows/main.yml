@@ -38,7 +38,6 @@ jobs:
 
       - name: Setup Project 
         run: |
-          gcloud --quiet config set project ${secrets.GCP_PROJECT_ID} 
           gcloud auth configure-docker us-west3-docker.pkg.dev
 
       - name: Build  image using Cloud Build
