@@ -42,6 +42,7 @@ jobs:
                
       - name: Push
         run: |
+          DOCKER_BUILDKIT=0
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/helloworld:latest
 
       - name: Deploy
