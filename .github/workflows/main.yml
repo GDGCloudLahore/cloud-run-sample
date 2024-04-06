@@ -75,10 +75,11 @@ jobs:
         run: |
           DOCKER_BUILDKIT=0
           docker build -t ${GCR_REGISTRY}/${{ secrets.GCP_PROJECT_ID }}/${GCR_IMAGE}/helloworld:${{ steps.versioning.outputs.new_tag }} .
+
                
       - name: Docker Push to Google Registry
         run: |
-          docker push ${GCR_REGISTRY}/${{ secrets.GCP_PROJECT_ID }}/${GCR_IMAGE}/helloworld:${{ steps.versioning.outputs.new_tag }}
+          docker push ${GCR_REGISTRY}/${{ secrets.GCP_PROJECT_ID }}/${GCR_IMAGE}/helloworld:${{steps.versioning.outputs.new_tag }}
 
       - name: Deploying Cloud Run with Latest image
         run: |
