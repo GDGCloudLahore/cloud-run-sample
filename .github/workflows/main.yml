@@ -76,18 +76,18 @@ jobs:
       - name: Build  image Build and Tag
         run: |
           DOCKER_BUILDKIT=0
-          docker build -t ${GCR_REGISTRY}/${{ secrets.GCP_PROJECT_ID }}/${GCR_IMAGE}/helloworld:${{ steps.versioning.outputs.new_tag }} .
+          docker build -t ${GCR_REGISTRY}/${{ secrets.GCP_PROJECT_ID }}/${GCR_IMAGE}/helloworld:${{ env.NEW_TAG }} .
 
                
       - name: Docker Push to Google Registry
         run: |
-          docker push ${GCR_REGISTRY}/${{ secrets.GCP_PROJECT_ID }}/${GCR_IMAGE}/helloworld:${{steps.versioning.outputs.new_tag }}
+          docker push ${GCR_REGISTRY}/${{ secrets.GCP_PROJECT_ID }}/${GCR_IMAGE}/helloworld:${{ env.NEW_TAG }}
 
       - name: Deploying Cloud Run with Latest image
         run: |
           gcloud run deploy helloworld \
           --region ${GCR_REGION} \
-          --image ${GCR_REGISTRY}/${{ secrets.GCP_PROJECT_ID }}/${GCR_IMAGE}/helloworld:${{ steps.versioning.outputs.new_tag }} \
+          --image ${GCR_REGISTRY}/${{ secrets.GCP_PROJECT_ID }}/${GCR_IMAGE}/helloworld:${{ env.NEW_TAG }} \
           --platform managed \
           --allow-unauthenticated \
           --project ${{ secrets.GCP_PROJECT_ID }}
