@@ -49,11 +49,11 @@ jobs:
         run: |
           docker push us-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gdgcloudlahore-419421/helloworld:latest
 
-      # - name: Deploy
-      #   run: |
-      #     gcloud run deploy helloworld \
-      #     --region us-west3 \
-      #     --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/helloworld \
-      #     --platform managed \
-      #     --allow-unauthenticated \
-      #     --project ${{ secrets.GCP_PROJECT_ID }}
+      - name: Deploy
+        run: |
+          gcloud run deploy helloworld \
+          --region us-west3 \
+          --image us-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gdgcloudlahore-419421/helloworld:latest \
+          --platform managed \
+          --allow-unauthenticated \
+          --project ${{ secrets.GCP_PROJECT_ID }}
