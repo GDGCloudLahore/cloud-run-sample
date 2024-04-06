@@ -31,7 +31,8 @@ jobs:
 
       - name: Configure Docker
         run: |
-          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://us-west3-docker.pkg.dev
+          gcloud auth configure-docker gcr.io
+
     
       - name: Build  image using Cloud Build
         run: |
