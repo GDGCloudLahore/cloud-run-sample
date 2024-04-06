@@ -10,6 +10,9 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   SERVICE_NAME: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
   GCR_HOSTNAME: gcr.io
+  GCR_REGISTRY: us-west3-docker.pkg.dev
+  GCR_IMAGE: gdgcloudlahore-419421
+  GCR_REGION: us-west3
 
 jobs:
   setup-build-publish-deploy:
@@ -19,6 +22,34 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0 # Necessary to fetch all tags and history
+      
+      - name: Determine new version
+        id: versioning
+        run: |
+          git fetch --tags
+          # Check if any tags exist
+          if [ $(git tag | wc -l) -eq 0 ]; then
+            echo "No tags found. Please create an initial tag."
+            exit 1  # Exit with error if no tags are found
+          else
+            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+          fi
+          echo "Latest tag is $LATEST_TAG"
+          # Prepare the next tag
+          NEXT_TAG="v$(echo $LATEST_TAG | sed 's/v//g' | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
+          echo "Attempting new tag $NEXT_TAG"
+          # Check if the NEXT_TAG already exists
+          if git rev-parse "$NEXT_TAG" >/dev/null 2>&1; then
+            echo "New tag $NEXT_TAG already exists. Using the latest tag $LATEST_TAG instead."
+            # If NEXT_TAG exists, we stick with LATEST_TAG and do not create a new one.
+            echo "NEW_TAG=$LATEST_TAG" >> $GITHUB_ENV
+          else
+            echo "New tag is $NEXT_TAG"
+            git tag $NEXT_TAG
+            git push origin $NEXT_TAG
+            # Use the successfully created new tag.
+            echo "NEW_TAG=$NEXT_TAG" >> $GITHUB_ENV
+          fi
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v0.2.0
@@ -38,22 +69,22 @@ jobs:
 
       - name: Setup Project 
         run: |
-          gcloud auth configure-docker us-west3-docker.pkg.dev
+          gcloud auth configure-docker ${GCR_REGISTRY}
 
-      - name: Build  image using Cloud Build
+      - name: Build  image Build and Tag
         run: |
           DOCKER_BUILDKIT=0
-          docker build -t us-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gdgcloudlahore-419421/helloworld:latest .
+          docker build -t ${GCR_REGISTRY}/${{ secrets.GCP_PROJECT_ID }}/${GCR_IMAGE}/helloworld:${{ steps.versioning.outputs.new_tag }} .
                
-      - name: Push
+      - name: Docker Push to Google Registry
         run: |
-          docker push us-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gdgcloudlahore-419421/helloworld:latest
+          docker push ${GCR_REGISTRY}/${{ secrets.GCP_PROJECT_ID }}/${GCR_IMAGE}/helloworld:${{ steps.versioning.outputs.new_tag }}
 
-      - name: Deploy
+      - name: Deploying Cloud Run with Latest image
         run: |
           gcloud run deploy helloworld \
-          --region us-west3 \
-          --image us-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/gdgcloudlahore-419421/helloworld:latest \
+          --region ${GCR_REGION} \
+          --image ${GCR_REGISTRY}/${{ secrets.GCP_PROJECT_ID }}/${GCR_IMAGE}/helloworld:${{ steps.versioning.outputs.new_tag }} \
           --platform managed \
           --allow-unauthenticated \
           --project ${{ secrets.GCP_PROJECT_ID }}
